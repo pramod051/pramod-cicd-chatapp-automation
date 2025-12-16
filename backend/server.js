@@ -5,7 +5,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
-const mysql = require('mysql');
+const mysql = require('mysql2');
 
 const authRoutes = require('./routes/auth');
 const chatRoutes = require('./routes/chat');
