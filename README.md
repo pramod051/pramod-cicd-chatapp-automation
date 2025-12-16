@@ -1,6 +1,6 @@
 # Talk With Teams - Professional Chat Application
 
-# add new line, Again add, Add more line, One  more time
+# add new line, Again add, Add more line, One  more time, adding
 
 A modern, professional chat application built with React, Node.js, Socket.IO, and MongoDB. Features real-time messaging, file sharing, group chats, and more.
 
