@@ -1,0 +1,66 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - run: npm install
+        working-directory: ./backend       # frontend may need another test job
+      - run: npm test
+        working-directory: ./backend
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Build Backend image
+        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/devops-chat-app-backend:${{ github.sha }} ./backend/Dockerfile
+
+      - name: Build Frontend image
+        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/devops-chat-app-frontend:${{ github.sha }} ./frontend/Dockerfile
+
+      # OPTIONAL — remove if using official Mongo image
+      # - name: Build Mongo image
+       # run: docker build -t ${{ secrets.DOCKER_USERNAME }}/devops-chat-app-mongo:${{ github.sha }} ./mongo
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Push images to Docker Hub
+        run: |
+          docker push ${{ secrets.DOCKER_USERNAME }}/devops-chat-app-backend:${{ github.sha }}
+          docker push ${{ secrets.DOCKER_USERNAME }}/devops-chat-app-frontend:${{ github.sha }}
+        #  docker push ${{ secrets.DOCKER_USERNAME }}/devops-chat-app-mongo:${{ github.sha }}
+
+          # Tag also as latest (recommended for Terraform/EC2)
+          docker tag ${{ secrets.DOCKER_USERNAME }}/devops-chat-app-backend:${{ github.sha }} ${{ secrets.DOCKER_USERNAME }}/devops-chat-app-backend:latest
+          docker tag ${{ secrets.DOCKER_USERNAME }}/devops-chat-app-frontend:${{ github.sha }} ${{ secrets.DOCKER_USERNAME }}/devops-chat-app-frontend:latest
+         # docker tag ${{ secrets.DOCKER_USERNAME }}/devops-chat-app-mongo:${{ github.sha }} ${{ secrets.DOCKER_USERNAME }}/devops-chat-app-mongo:latest
+
+          docker push ${{ secrets.DOCKER_USERNAME }}/devops-chat-app-backend:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/devops-chat-app-frontend:latest
+         # docker push ${{ secrets.DOCKER_USERNAME }}/devops-chat-app-mongo:latest
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Deploy to EC2 (SSH)
+        run: |
+          echo "This is where we will deploy on EC2"
