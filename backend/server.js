@@ -43,9 +43,9 @@ db.connect((err) => {
 });
 
 // Serve the HTML file
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
+//app.get('/', (req, res) => {
+//    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+//});
 
 // Create a table
 app.get('/createTable', (req, res) => {
