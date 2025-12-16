@@ -33,6 +33,30 @@ const db = mysql.createConnection({
     database: process.env.DB_NAME
 });
 
+// Connect to MySQL
+db.connect((err) => {
+    if (err) {
+        console.error("DB Connection Failed:", err);
+        throw err;
+    }
+    console.log('MySQL Connected...');
+});
+
+// Serve the HTML file
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Create a table
+app.get('/createTable', (req, res) => {
+    let sql = 'CREATE TABLE IF NOT EXISTS items(id int AUTO_INCREMENT, name VARCHAR(255), PRIMARY KEY(id))';
+    db.query(sql, (err, result) => {
+        if (err) throw err;
+        res.send('Items table created...');
+    });
+});
+
+
 // Database connection
 //mongoose.connect(process.env.MONGODB_URI || '13.234.210.21://mongodb:27017/talkwithteams')
 //  .then(() => console.log('Connected to MongoDB'))
