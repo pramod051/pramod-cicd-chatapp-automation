@@ -12,11 +12,17 @@ pipeline {
         FRONTEND_IMAGE = 'pramod051/chat-frontend:latest'
         BACKEND_IMAGE  = 'pramod051/chat-backend:latest'
 
-        // Database
-        DB_HOST     = credentials('DB_HOST')
-        DB_USER     = credentials('DB_USER')
+        // Database This is existing currently we have commented out
+        //DB_HOST     = credentials('DB_HOST')
+        //DB_USER     = credentials('DB_USER')
+        //DB_PASSWORD = credentials('DB_PASSWORD')
+        //DB_NAME     = credentials('DB_NAME')
+        
+        // Database ENV VARS from Jenkins Credentials new add
+        DB_HOST = credentials('DB_HOST')
+        DB_USER = credentials('DB_USER')
         DB_PASSWORD = credentials('DB_PASSWORD')
-        DB_NAME     = credentials('DB_NAME')
+        DB_NAME = credentials('DB_NAME')
     }
 
     stages {
