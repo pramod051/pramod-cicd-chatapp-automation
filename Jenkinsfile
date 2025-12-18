@@ -81,7 +81,7 @@ pipeline {
                   --name chat-frontend \
                   --network chat-net \
                   -p 3000:3000 \
-                  -e REACT_APP_API_URL=http://13.233.144.169:5000 \
+                  -e REACT_APP_API_URL=http://65.0.32.172:5000 \
                   ${FRONTEND_IMAGE}
                 '''
             }
