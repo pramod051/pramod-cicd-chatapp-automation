@@ -6,7 +6,7 @@ pipeline {
         SCANNER_HOME = tool 'sonar-scanner'
         SONAR_TOKEN  = credentials('sonar-token')
         SONAR_ORG    = 'automate-chat-application'
-        SONAR_PROJECT_KEY = 'automate-chat-application_chatwithteams'
+        SONAR_PROJECT_KEY = 'automate-chat-application_pramodchatapp'
 
         // Docker images
         FRONTEND_IMAGE = 'pramod051/chat-frontend:latest'
