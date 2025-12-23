@@ -1,38 +1,47 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const sequelize = require('../config/database');
 
-const roomSchema = new mongoose.Schema({
+const Room = sequelize.define('Room', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
+
   name: {
-    type: String,
-    required: true
+    type: DataTypes.STRING,
+    allowNull: false
   },
+
   description: {
-    type: String,
-    default: ''
+    type: DataTypes.TEXT,
+    defaultValue: ''
   },
+
   type: {
-    type: String,
-    enum: ['private', 'group'],
-    default: 'private'
+    type: DataTypes.ENUM('private', 'group'),
+    defaultValue: 'private'
   },
-  participants: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  }],
-  admin: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
+
+  createdByUserId: {
+    type: DataTypes.UUID,
+    allowNull: false
   },
-  createdBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+
+  adminUserId: {
+    type: DataTypes.UUID,
+    allowNull: true
   },
-  lastMessage: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Message'
+
+  lastMessageId: {
+    type: DataTypes.UUID,
+    allowNull: true
   }
+
 }, {
+  tableName: 'rooms',
   timestamps: true
 });
 
-module.exports = mongoose.model('Room', roomSchema);
+module.exports = Room;
+

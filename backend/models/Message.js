@@ -1,64 +1,66 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const sequelize = require('../config/database');
 
-const messageSchema = new mongoose.Schema({
-  sender: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+const Message = sequelize.define('Message', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
   },
+
+  senderId: {
+    type: DataTypes.UUID,
+    allowNull: false
+  },
+
   content: {
-    type: String,
-    required: true
+    type: DataTypes.TEXT,
+    allowNull: false
   },
+
   messageType: {
-    type: String,
-    enum: ['text', 'image', 'video', 'file'],
-    default: 'text'
+    type: DataTypes.ENUM('text', 'image', 'video', 'file'),
+    defaultValue: 'text'
   },
+
   room: {
-    type: String,
-    required: true
+    type: DataTypes.STRING,
+    allowNull: false
   },
-  timestamp: {
-    type: Date,
-    default: Date.now
+
+  replyToMessageId: {
+    type: DataTypes.UUID,
+    allowNull: true
   },
-  replyTo: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Message',
-    default: null
+
+  forwardedFromMessageId: {
+    type: DataTypes.UUID,
+    allowNull: true
   },
-  forwardedFrom: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Message',
-    default: null
-  },
+
   fileName: {
-    type: String,
-    default: ''
+    type: DataTypes.STRING,
+    defaultValue: ''
   },
+
   fileSize: {
-    type: Number,
-    default: 0
+    type: DataTypes.INTEGER,
+    defaultValue: 0
   },
+
   isDeleted: {
-    type: Boolean,
-    default: false
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
   },
+
   deletedAt: {
-    type: Date,
-    default: null
-  },
-  readBy: [{
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
-    },
-    readAt: {
-      type: Date,
-      default: Date.now
-    }
-  }]
+    type: DataTypes.DATE,
+    allowNull: true
+  }
+}, {
+  tableName: 'messages',
+  timestamps: true   // createdAt, updatedAt
 });
 
-module.exports = mongoose.model('Message', messageSchema);
+module.exports = Message;
+
