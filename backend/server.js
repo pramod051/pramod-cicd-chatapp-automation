@@ -1,130 +1,71 @@
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
-const mongoose = require('mongoose');
 const cors = require('cors');
-const path = require('path');
 require('dotenv').config();
-const mysql = require('mysql2');
 
-const authRoutes = require('./routes/auth');
-const chatRoutes = require('./routes/chat');
-const userRoutes = require('./routes/user');
+// AWS DynamoDB Clients
+const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
+const { DynamoDBDocumentClient, PutCommand } = require("@aws-sdk/lib-dynamodb");
 
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
-  }
+  cors: { origin: "*", methods: ["GET", "POST"] }
 });
 
-// Middleware
 app.use(cors());
 app.use(express.json());
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Create connection to MySQL using environment variables
-const db = mysql.createConnection({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME
-});
-
-// Connect to MySQL
-db.connect((err) => {
-    if (err) {
-        console.error("DB Connection Failed:", err);
-        throw err;
+// --- 1. Configure DynamoDB ---
+const client = new DynamoDBClient({
+    region: process.env.AWS_REGION,
+    credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
     }
-    console.log('MySQL Connected...');
 });
+const docClient = DynamoDBDocumentClient.from(client);
 
-// Serve the HTML file
-//app.get('/', (req, res) => {
-//    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-//});
-
-// Create a table
-app.get('/createTable', (req, res) => {
-    let sql = 'CREATE TABLE IF NOT EXISTS items(id int AUTO_INCREMENT, name VARCHAR(255), PRIMARY KEY(id))';
-    db.query(sql, (err, result) => {
-        if (err) throw err;
-        res.send('Items table created...');
-    });
-});
-
-
-// Database connection
-//mongoose.connect(process.env.MONGODB_URI || '13.234.210.21://mongodb:27017/talkwithteams')
-//  .then(() => console.log('Connected to MongoDB'))
-//  .catch(err => console.error('MongoDB connection error:', err));
-
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/chat', chatRoutes);
-app.use('/api/user', userRoutes);
-
-// Socket.IO connection handling
-const Message = require('./models/Message');
-const User = require('./models/User');
-
+// --- 2. Socket.IO Handling ---
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
   socket.on('join-room', (roomId) => {
     socket.join(roomId);
-    console.log(`User ${socket.id} joined room ${roomId}`);
   });
 
   socket.on('send-message', async (data) => {
-    try {
-      const message = new Message({
+    // Structure data for Single Table Design
+    const newMessage = {
+        PK: `ROOM#${data.room}`,               // Partition Key
+        SK: `MSG#${new Date().toISOString()}`, // Sort Key (Orders messages by time)
         sender: data.sender,
         content: data.content,
         messageType: data.messageType || 'text',
-        room: data.room,
-        replyTo: data.replyTo || null,
-        forwardedFrom: data.forwardedFrom || null,
-        fileName: data.fileName || '',
-        timestamp: new Date()
-      });
-      
-      await message.save();
-      await message.populate([
-        { path: 'sender', select: 'username profilePicture' },
-        { 
-          path: 'replyTo',
-          populate: { path: 'sender', select: 'username' }
-        },
-        { 
-          path: 'forwardedFrom',
-          populate: { path: 'sender', select: 'username' }
-        }
-      ]);
-      
-      io.to(data.room).emit('receive-message', message);
+        timestamp: new Date().toISOString()
+    };
+
+    try {
+      // Save to DynamoDB
+      await docClient.send(new PutCommand({
+        TableName: "TalkWithTeams",
+        Item: newMessage
+      }));
+
+      // Broadcast to room
+      io.to(data.room).emit('receive-message', newMessage);
     } catch (error) {
-      console.error('Error saving message:', error);
+      console.error('DynamoDB Error:', error);
     }
   });
 
-  socket.on('typing', (data) => {
-    socket.to(data.room).emit('user-typing', data);
-  });
-
-  socket.on('stop-typing', (data) => {
-    socket.to(data.room).emit('user-stop-typing', data);
-  });
-
   socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
+    console.log('User disconnected');
   });
 });
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
-  console.log(`Talk With Teams server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
